@@ -1,1 +1,1 @@
-{}
+{:database-url "jdbc:postgresql://localhost/reframe_test?user=reframe_test&password=refame_test"}

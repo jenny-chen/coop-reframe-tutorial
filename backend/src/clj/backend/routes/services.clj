@@ -7,6 +7,7 @@
     [reitit.ring.middleware.muuntaja :as muuntaja]
     [reitit.ring.middleware.multipart :as multipart]
     [reitit.ring.middleware.parameters :as parameters]
+    [backend.controllers :as c]
     [backend.middleware.formats :as formats]
     [ring.util.http-response :refer :all]
     [clojure.java.io :as io]))
@@ -66,6 +67,54 @@
              :handler (fn [{{{:keys [x y]} :body} :parameters}]
                         {:status 200
                          :body {:total (+ x y)}})}}]]
+    ["/login"
+     {:post {:responses {200 {:body {:user-id int?}}}
+             :parameters {:body {:pass string?, :username string?}}
+             :handler (fn [{{{:keys [pass username]} :body} :parameters}]
+                        {:status 200
+                         :body {:user-id
+                                (:id (c/user-in-system username pass))}})}}]
+    ["/user"
+     {:post {:responses {200 {:body {:user-id int? :text string?}}}
+             :summary "Create a user"
+             :parameters {:body {:pass string?, :username string?}}
+             :handler (fn [{{{:keys [pass username]} :body} :parameters}]
+                          {:status 200
+                           :body (c/create-user username pass)})}}]
+    ["/check-username"
+     {:get {:summary "Check availability of username"
+            :parameters {:query {:username string?}}
+            :responses {200 {:body {:taken boolean?}}}
+            :handler (fn [{{{:keys [username]} :query} :parameters}]
+                       {:status 200
+                        :body {:taken (c/username-available? username)}})}}]
+
+    ["/check-password"
+     {:post {:summary "Check to see if password is strong"
+             :parameters {:body {:username string?}}
+             :responses {200 {:body {:strong boolean?}}}
+             :handler (fn [{{{:keys [pass]} :query} :parameters}]
+                        {:status 200
+                         :body {:strong (c/strong-password? pass)}})}}]
+    ["/text"
+     {:get {:summary "Get text associated with a user"
+            :responses {200 {:body {:user-id int?
+                                    :text    string?}}}
+            :parameters {:query {:user-id int?}}
+            :handler (fn [{{{:keys [user-id]} :query} :parameters}]
+                       {:status 200
+                        :body (-> user-id
+                                  c/get-user-text
+                                  (dissoc :id))})}
+      :post {:summary "Update text associated with a user"
+             :responses {200 {:body {:user-id int?
+                                     :text    string?}}}
+             :parameters {:body {:user-id int? :text string?}}
+             :handler (fn [{{{:keys [user-id text]} :body} :parameters}]
+                        {:status 200
+                         :body (-> user-id
+                                   (c/update-user-text text)
+                                   (dissoc :id))})}}]
 
    ["/files"
     {:swagger {:tags ["files"]}}
